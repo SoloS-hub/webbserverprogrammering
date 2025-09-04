@@ -1,16 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Document</title>
-	</head>
-	<body>
-		<h1>Bob's tools</h1>
-		<ul>
-			{% for tool in tools %}
-			<li>{{ tool.name }} {{ tool.price }} {{ tool.brand }} {{ tool.stock }}</li>
-			{% endfor %}
-		</ul>
-	</body>
-</html>
+{% extends "base.html"%}
+
+{% block content%}
+<body>
+	<h1>Bob's tools</h1>
+	<ul>
+		{% for tool in tools %}
+		<li>Name: {{ tool.name }} Price: {{ tool.price }}$ Brand: {{ tool.brand }} Stock {{ tool.stock }}</li>
+		{% endfor %}
+	</ul>
+	<a href="/">Back to Home</a>
+</body>
+{% endblock %}

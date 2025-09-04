@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return "Hello, Te23D World!"
+    return render_template("index.html")
 
 
 @app.route('/user/<username>')
@@ -24,16 +24,7 @@ def add():
 
 @app.route('/login')
 def login():
-    return """
-<form action="/submit" method="post">
-    <label for="name">name:</label>
-    <input type="text" id="name" name="name"><br>
-    <label for="pasword">pasword:</label>
-    <input type="password" id="pasword" name="pasword"><br>
-    <input type="checkbox" id="checkbox" name="checkbox"><label for="checkbox">do you accept cookies</label> <br>
-    <input type="submit" value="Submit">
-</form>
-"""
+    return render_template("login.html")
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -41,10 +32,6 @@ def submit():
     pasword = request.form.get('pasword', '')
     checkbox = request.form.get('checkbox', False)
     return f'Received via POST: {name}, {pasword},  Checkbox: {checkbox}'
-
-@app.route('/templates/<username>')
-def templates(username):
-    return render_template("index.html", name=username)
 
 TOOLS_INFO = [
     {"name": "hammer", "price": 9.99, "brand": "Acme", "stock": 12, "category": "hand tool"},

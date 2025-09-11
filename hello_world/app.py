@@ -1,11 +1,19 @@
 from flask import *
+import csv
 
 app = Flask(__name__)
+
+users = {
+}
+
+with open('users.csv', newline='') as csvfile:
+    spamreader = csv.reader(csvfile, delimiter=';', quotechar='|')
+    for row in spamreader:
+        users[row[0]] = row[1]
 
 @app.route('/')
 def hello_world():
     return render_template("index.html")
-
 
 @app.route('/user/<username>')
 def show_user_profile(username):
@@ -22,16 +30,17 @@ def add():
     b = request.args.get('b', default=0, type=int)
     return f"a + b = {a + b}"
 
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        if not request.form.get('checkbox'):
+            return 'You must accept the terms and conditions to log in.'
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+        if users.get(username) == password:
+            return f'Logged in as: {username}'
+        return 'Invalid username or password'
     return render_template("login.html")
-
-@app.route('/submit', methods=['POST'])
-def submit():
-    name = request.form.get('name', '')
-    pasword = request.form.get('pasword', '')
-    checkbox = request.form.get('checkbox', False)
-    return f'Received via POST: {name}, {pasword},  Checkbox: {checkbox}'
 
 TOOLS_INFO = [
     {"name": "hammer", "price": 9.99, "brand": "Acme", "stock": 12, "category": "hand tool"},

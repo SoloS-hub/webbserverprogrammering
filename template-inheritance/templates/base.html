@@ -10,10 +10,10 @@
 		<nav>
             links
 			<ul>
-				<li><a href="/">Home</a></li>
-				<li><a href="/about">About</a></li>
-				<li><a href="/contact">Contact</a></li>
-                <li><a href="/subpage">Subpage</a></li>
+				<li><a href="{{url_for('home')}}" class="{{'active' if request.path == url_for('home') else ''}}">Home</a></li>
+				<li><a href="{{url_for('about')}}" class="{{'active' if request.path == url_for('about') else ''}}">About</a></li>
+				<li><a href="{{url_for('contact')}}" class="{{'active' if request.path == url_for('contact') else ''}}">Contact</a></li>
+                <li><a href="{{url_for('subpage')}}" class="{{'active' if request.path == url_for('subpage') else ''}}">Subpage</a></li>
 			</ul>
 		</nav>
 		{% block content %}{% endblock %}

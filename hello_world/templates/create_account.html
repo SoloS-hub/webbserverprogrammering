@@ -1,0 +1,10 @@
+{% extends "base.html"%} {% block content %}
+<form action="/create_account" method="post">
+	<label for="username">username:</label>
+	<input type="text" id="username" name="username" required /><br />
+	<label for="password">password:</label>
+	<input type="password" id="password" name="password" required /><br />
+	<input type="checkbox" id="checkbox" name="checkbox" required /><label for="checkbox">do you accept the terms and conditions?</label> <br />
+	<input type="submit" value="login" />
+</form>
+{% endblock %}

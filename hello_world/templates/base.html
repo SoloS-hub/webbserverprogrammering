@@ -6,14 +6,15 @@
 		<title>Document</title>
 	</head>
 	<body>
-        <h1>Detta är i base.html</h1>
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/bob">Bob's Tools</a></li>
-                <li><a href="/login">Login</a></li>
-            </ul>
-        </nav>
+		<h1>Detta är i base.html</h1>
+		<nav>
+			<ul>
+				<li><a href="{{url_for('home')}}">Home</a></li>
+				<li><a href="{{url_for('bob')}}">Bob's Tools</a></li>
+				<li><a href="{{url_for('login')}}">Login</a></li>
+				<li><a href="{{url_for('profile')}}">Profile</a></li>
+			</ul>
+		</nav>
 		{% block content %}{% endblock %}
 	</body>
 </html>

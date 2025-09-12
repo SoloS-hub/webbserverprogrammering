@@ -3,6 +3,8 @@ import csv
 
 app = Flask(__name__)
 
+app.secret_key = 'your_secret_key'
+
 users = {
 }
 
@@ -12,12 +14,8 @@ with open('users.csv', newline='') as csvfile:
         users[row[0]] = row[1]
 
 @app.route('/')
-def hello_world():
+def home():
     return render_template("index.html")
-
-@app.route('/user/<username>')
-def show_user_profile(username):
-    return f"User: {username}"
 
 @app.route('/search')
 def search():
@@ -32,15 +30,41 @@ def add():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if session.get('username'):
+        return redirect(url_for('profile'))
     if request.method == 'POST':
-        if not request.form.get('checkbox'):
-            return 'You must accept the terms and conditions to log in.'
         username = request.form.get('username', '')
         password = request.form.get('password', '')
         if users.get(username) == password:
-            return f'Logged in as: {username}'
+            session['username'] = username
+            return render_template("profile.html", username=session['username'])
         return 'Invalid username or password'
     return render_template("login.html")
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+
+@app.route('/create_account', methods=['GET', 'POST'])
+def create_account():
+    if request.method == 'POST':
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+        if username in users:
+            return 'Username already exists'
+        users[username] = password
+        with open('users.csv', 'a', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            spamwriter.writerow([username, password])
+        return redirect(url_for('login'))
+    return render_template("create_account.html")
+
+@app.route('/profile')
+def profile():
+    if 'username' in session:
+        return render_template("profile.html", username=session['username'])
+    return redirect(url_for('login'))
 
 TOOLS_INFO = [
     {"name": "hammer", "price": 9.99, "brand": "Acme", "stock": 12, "category": "hand tool"},

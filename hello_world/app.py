@@ -1,5 +1,6 @@
 from flask import *
-import csv
+import os
+import json
 
 app = Flask(__name__)
 
@@ -8,10 +9,8 @@ app.secret_key = 'your_secret_key'
 users = {
 }
 
-with open('users.csv', newline='') as csvfile:
-    spamreader = csv.reader(csvfile, delimiter=';', quotechar='|')
-    for row in spamreader:
-        users[row[0]] = row[1]
+with open('users.json') as f:
+    users = json.load(f)
 
 @app.route('/')
 def home():
@@ -54,9 +53,7 @@ def create_account():
         if username in users:
             return 'Username already exists'
         users[username] = password
-        with open('users.csv', 'a', newline='') as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow([username, password])
+        json.dump(users, open('users.json', 'w'))
         return redirect(url_for('login'))
     return render_template("create_account.html")
 
@@ -75,6 +72,12 @@ TOOLS_INFO = [
 @app.route('/bob')
 def bob():
     return render_template("bob.html", tools=TOOLS_INFO)
+
+@app.route('/view_users')
+def view_users():
+    return render_template("users.html", users=users.keys())
+list(users.keys())
+
 
 if __name__ == '__main__':
     app.run(debug=True)

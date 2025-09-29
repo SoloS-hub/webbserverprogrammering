@@ -6,10 +6,9 @@ app = Flask(__name__)
 
 app.secret_key = 'your_secret_key'
 
-users = {
-}
+users = {}
 
-with open('users.json') as f:
+with open('users.json', "r") as f:
     users = json.load(f)
 
 @app.route('/')
@@ -36,7 +35,11 @@ def login():
         password = request.form.get('password', '')
         if users.get(username) == password:
             session['username'] = username
-            return render_template("profile.html", username=session['username'])
+            user_file = os.path.join("user_data", f"{session['username']}.json")
+            if os.path.exists(user_file):
+                with open(user_file, 'r') as f:
+                    user_data = json.load(f)
+            return render_template("profile.html", username=session['username'], user_data=user_data)
         return 'Invalid username or password'
     return render_template("login.html")
 
@@ -54,13 +57,41 @@ def create_account():
             return 'Username already exists'
         users[username] = password
         json.dump(users, open('users.json', 'w'))
+        # create a user file in user_data folder
+        save_users(username)
         return redirect(url_for('login'))
     return render_template("create_account.html")
 
-@app.route('/profile')
+def save_users(username):
+    with open(os.path.join("static/user_template.json"), 'r') as f:
+        user_data = json.load(f)
+    with open(os.path.join("user_data", f"{username}.json"), 'w') as f:
+        user_data['username'] = username
+        json.dump(user_data, f)
+
+
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
+    if request.method == 'POST':
+        name = request.form.get('name', '')
+        email = request.form.get('email', '')
+        about_me = request.form.get('about_me', '')
+        # return f"Name: {name}, Email: {email}, About Me: {about_me}"
+        user_file = os.path.join("user_data", f"{session['username']}.json")
+        if os.path.exists(user_file):
+            with open(user_file, 'r') as f:
+                user_data = json.load(f)
+            user_data['name'] = name
+            user_data['email'] = email
+            user_data['about_me'] = about_me
+            with open(user_file, 'w') as f:
+                json.dump(user_data, f)
     if 'username' in session:
-        return render_template("profile.html", username=session['username'])
+        user_file = os.path.join("user_data", f"{session['username']}.json")
+        if os.path.exists(user_file):
+            with open(user_file, 'r') as f:
+                user_data = json.load(f)
+        return render_template("profile.html", username=session['username'], user_data=user_data)
     return redirect(url_for('login'))
 
 TOOLS_INFO = [
@@ -76,7 +107,6 @@ def bob():
 @app.route('/view_users')
 def view_users():
     return render_template("users.html", users=users.keys())
-list(users.keys())
 
 
 if __name__ == '__main__':

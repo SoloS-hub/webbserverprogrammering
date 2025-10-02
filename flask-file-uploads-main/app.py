@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, flash
+from flask import Flask, request, render_template, redirect, send_from_directory, url_for, flash
 import os
 from werkzeug.utils import secure_filename
 
@@ -36,6 +36,29 @@ def upload_file():
             return redirect(request.url)
     # Denna mall visas för GET-requests och efter lyckad uppladdning
     return render_template('upload.html')
+
+@app.route('/uploads')
+def list_uploads():
+    files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f != '.gitkeep']
+    allowed_imgs = ['png', 'jpg', 'jpeg', 'gif']
+    allowed_pdfs = ['pdf']
+    allowed_texts = ['txt']
+    imgs = []
+    pdfs = []
+    txts = []
+    for f in files:
+        if f.split('.')[-1].lower() in allowed_imgs:
+            imgs.append(f)
+        elif f.split('.')[-1].lower() in allowed_pdfs:
+            pdfs.append(f)
+        elif f.split('.')[-1].lower() in allowed_texts:
+            txts.append(f)
+    return render_template('uploads.html', files=files, imgs=imgs, pdfs=pdfs, txts=txts)
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)

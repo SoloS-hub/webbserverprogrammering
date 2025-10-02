@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>uploaded files</title>
+	</head>
+	<body>
+		<h1>Uploaded files</h1>
+		{% if imgs%}
+		<h2>Images</h2>
+		<ul>
+			{% for img in imgs %} {% if img.split('.')[-1].lower() in ['png', 'jpg', 'jpeg', 'gif'] %}
+			<img src="/uploads/{{ img }}" alt="{{ img }}" />
+			{% endif %}
+			<li><a href="/uploads/{{ img }}">{{ img }}</a></li>
+			<br />
+			{% endfor %}
+		</ul>
+		{% endif %} {% if pdfs%}
+		<h2>PDFs</h2>
+		<ul>
+			{% for pdf in pdfs %}
+			<li><a href="/uploads/{{ pdf }}">{{ pdf }}</a></li>
+			<br />
+			{% endfor %}
+		</ul>
+		{% endif %} {% if txts %}
+		<h2>Texts</h2>
+		<ul>
+			{% for txt in txts %}
+			<li><a href="/uploads/{{ txt }}">{{ txt }}</a></li>
+			<br />
+			{% endfor %}
+		</ul>
+		{% endif %}
+		<a href="/">Go back</a>
+	</body>
+</html>

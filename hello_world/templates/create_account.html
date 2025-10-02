@@ -5,6 +5,8 @@
 	<label for="password">password:</label>
 	<input type="password" id="password" name="password" required /><br />
 	<input type="checkbox" id="checkbox" name="checkbox" required /><label for="checkbox">do you accept the terms and conditions?</label> <br />
+	{% with message = get_flashed_messages() %} {% if message %} {{ message[0] }} <br />
+	{% endif %} {% endwith %}
 	<input type="submit" value="create" />
 </form>
 {% endblock %}

@@ -54,7 +54,8 @@ def create_account():
         username = request.form.get('username', '')
         password = request.form.get('password', '')
         if username in users:
-            return 'Username already exists'
+            flash('Username already exists')
+            return redirect(url_for('create_account'))
         users[username] = password
         json.dump(users, open('users.json', 'w'))
         # create a user file in user_data folder
@@ -67,6 +68,7 @@ def save_users(username):
         user_data = json.load(f)
     with open(os.path.join("user_data", f"{username}.json"), 'w') as f:
         user_data['username'] = username
+        user_data['name'] = username
         json.dump(user_data, f)
 
 

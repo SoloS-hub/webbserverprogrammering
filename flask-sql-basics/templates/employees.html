@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>employees</title>
+	</head>
+	<body>
+        <h1>Employees</h1>
+        <a href="{{ url_for('add_employee') }}">Add Employee</a>
+
+		<table>
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>First name</th>
+                    <th>Last name</th>
+					<th>Email</th>
+                    <th>Job Title</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for employee in employees %}
+				<tr>
+					<td>{{ employee.employeeNumber }}</td>
+					<td>{{ employee.firstName }}</td>
+					<td>{{ employee.lastName }}</td>
+					<td>{{ employee.email }}</td>
+					<td>{{ employee.jobTitle }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		<a href="/">Back</a>
+	</body>
+</html>

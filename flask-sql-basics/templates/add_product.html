@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Add product</title>
+	</head>
+	<body>
+		<h1>Add New Product</h1>
+		<form method="POST">
+            productCode, productName, productLine, productScale, productVendor, productDescription, quantityInStock, buyPrice, MSRP
+			<label for="productCode">Product Code:</label>
+			<input type="text" name="productCode" required /><br />
+			<label for="productName">Product Name:</label>
+			<input type="text" name="productName" required /><br />
+			<label for="productLine">Product Line:</label>
+			<input type="text" name="productLine" value="{{ productLine }}" required /><br />
+            <label for="productScale">Product Scale:</label>
+            <input type="text" name="productScale" required /><br />
+            <label for="productVendor">Product Vendor:</label>
+            <input type="text" name="productVendor" required /><br />
+            <label for="productDescription">Product Description:</label>
+            <textarea name="productDescription" required></textarea><br />
+            <label for="quantityInStock">Quantity in Stock:</label>
+            <input type="number" name="quantityInStock" required /><br />
+            <label for="buyPrice">Buy Price:</label>
+            <input type="text" name="buyPrice" required /><br />
+            <label for="MSRP">MSRP:</label>
+            <input type="text" name="MSRP" required /><br />
+			<button type="submit">Save</button>
+		</form>
+		<a href="/">Back</a>
+	</body>
+</html>

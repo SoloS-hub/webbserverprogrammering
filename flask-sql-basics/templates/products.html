@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Products in {{ product_line }}</title>
+	</head>
+	<body>
+		<h1>Products in {{ product_line }}</h1>
+		<a href="{{ url_for('add_product') }}?product_line={{ product_line }}">Add product</a>
+		<ul>
+			{% for product in products %}
+			<li>{{ product.productName }} (Code: {{ product.productCode }})</li>
+			{% endfor %}
+		</ul>
+		<a href="{{ url_for('product_lines') }}">Back to Product Lines</a><br />
+	</body>
+</html>

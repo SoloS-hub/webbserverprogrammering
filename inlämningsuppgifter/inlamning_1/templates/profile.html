@@ -1,0 +1,27 @@
+{% extends "base.html"%} {% block title %}Profile{% endblock %} {% block content %}
+<h2>Welcome, {{ username }}!</h2>
+<p>This is your profile page.</p>
+<div class="profile-details">
+	<p><strong>Name:</strong> {{ user_data["name"] or 'Not provided' }}</p>
+	{% if user_data["email"] %}
+	<p><strong>Email:</strong> <a href="mailto:{{ user_data['email'] }}">{{ user_data["email"] or 'Not provided' }}</a></p>
+	{% endif %} {% if user_data["about_me"] %}
+	<h3>About me</h3>
+	<p>{{ user_data["about_me"] }}</p>
+	{% endif %}
+	{% with message = get_flashed_messages() %} {% if message %} {{ message[0] }} <br />
+	{% endif %} {% endwith %}
+</div>
+
+<div>
+	<h3>Edit Profile</h3>
+	<form method="POST" action="{{ url_for('profile') }}">
+		<label for="name">Name:</label><br />
+		<input type="text" id="name" name="name" value="{{ user_data['name'] }}" /><br /><br />
+		<label for="email">Email:</label><br />
+		<input type="email" id="email" name="email" value="{{ user_data['email'] }}" /><br /><br />
+		<input type="submit" value="Update Profile" />
+	</form>
+</div>
+<a href="{{ url_for('logout') }}">Logout</a>
+{% endblock %}

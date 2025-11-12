@@ -1,0 +1,12 @@
+{% extends "base.html"%} {% block content%}
+<h1>Welcome to the Global Goals App!</h1>
+<p>This is the home page.</p>
+<nav>
+	<ul>
+        {% for goal in goals %}
+		<li><a href="/goals/{{ goal.id }}" style="background-color: {{ goal.color_code }};">{{ goal.id }} {{ goal.name }}</a></li> 
+        <p>{{ goal.description }}</p>
+        {% endfor %}
+	</ul>
+</nav>
+{% endblock %}

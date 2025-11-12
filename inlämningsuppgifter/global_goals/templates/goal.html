@@ -1,0 +1,13 @@
+{% extends "base.html"%} {% block content%}
+<h1 style="background-color: {{ goal.color_code }};">{{ goal.id }} {{ goal.name }}</h1>
+<p>{{ goal.description }}</p>
+
+<ul>
+	{% for target in targets %}
+	<li>
+        <p>{{ target.code }} {{ target.name }}</p>
+		<p>{{ target.description }}</p>
+	</li>
+	{% endfor %}
+</ul>
+{% endblock %}

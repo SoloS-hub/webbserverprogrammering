@@ -3,40 +3,24 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import json
+import time
 
 app = Flask(__name__)
 
 app.secret_key = 'your_secret_key'
 
-users = {}
+users = { "1": "password1", "2": "password2" }
 
-with open('users.json', "r") as f:
-    users = json.load(f)
+@app.before_request
+def start_timer():
+    g.start_time = time.time()
+    app.logger.info(f"Request started: {request.method} {request.path}")
 
-def set_up_logging():
-    """Set up logging for the application."""
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-
-    # Create a rotating file handler for logging, keeps the 10 most recent logs
-    # removing the oldest when the log file exceeds 10KB
-    file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
-    
-    # sets up the log format (how the log messages will appear in the log file)
-    file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-    
-    # Set the logging level to INFO
-    file_handler.setLevel(logging.INFO)
-
-    # Add the handler to the app logger
-    app.logger.addHandler(file_handler)
-
-    # Set the overall logging level for the app
-    app.logger.setLevel(logging.INFO)
-
-    # Log that the app has started
-    app.logger.info('Flask Error Handling Demo startup')
+@app.after_request
+def log_request(response):
+    duration = time.time() - g.start_time
+    app.logger.info(f"Request ended: {request.method} {request.path} | Duration: {duration:.4f}s | Status: {response.status_code}")
+    return response
 
 @app.route('/')
 def home():
@@ -62,10 +46,7 @@ def login():
         password = request.form.get('password', '')
         if users.get(username) == password:
             session['username'] = username
-            user_file = os.path.join("user_data", f"{session['username']}.json")
-            if os.path.exists(user_file):
-                with open(user_file, 'r') as f:
-                    user_data = json.load(f)
+            user_data = {}
             return render_template("profile.html", username=session['username'], user_data=user_data)
         return 'Invalid username or password'
     return render_template("login.html")
@@ -155,5 +136,4 @@ def handle_exception(error):
 
 
 if __name__ == '__main__':
-    set_up_logging()
     app.run(debug=True)

@@ -14,6 +14,7 @@ def login_required(f):
         if 'username' not in session:
             return redirect(url_for('login'))
         return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.before_request
@@ -113,16 +114,16 @@ def profile():
         conn.commit()
         cursor.close()
         conn.close()
-    if 'username' in session:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        query = "SELECT username, name, email FROM users WHERE username = %s"
-        cursor.execute(query, (session['username'],))
-        user_data = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return render_template("profile.html", username=session['username'], user_data=user_data)
-    return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT username, name, email FROM users WHERE username = %s"
+    cursor.execute(query, (session['username'],))
+    user_data = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return render_template("profile.html", username=session['username'], user_data=user_data)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

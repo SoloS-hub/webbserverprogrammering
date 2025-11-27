@@ -1,15 +1,9 @@
-def aDecorator(func):
-    def wrapper(*args, **kwargs):
-        print(f"Calling function: {func.__name__} with args: {args} and kwargs: {kwargs}")
-        result = func(*args, **kwargs)
-        print(f"Function {func.__name__} returned: {result}")
-        return result
-    return wrapper
 
-@aDecorator
-def aFunction(*args, **kwargs):
-    if kwargs.get("type") == "sum":
-        return sum(args)
-    return None
+from werkzeug.security import generate_password_hash, check_password_hash
 
-aFunction(3, 5, type="sum")
+password = "test"
+
+pwhash = generate_password_hash(password)
+
+if check_password_hash(pwhash, password):
+    print("Password is valid")

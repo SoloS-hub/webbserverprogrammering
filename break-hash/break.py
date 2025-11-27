@@ -23,8 +23,8 @@ def crack_hash(type, file):
                     password_dict_cracked[password_dict[hash_value_cracked]] = pasword_cracked
                 else:
                     password_not_found[hash_value] = username
-                    
-    
+
+
 
     print(f"Läst {len(password_dict)} hashar från passwords.csv")
     print(f"Dictionary skapad med hash som nyckel och användarnamn som värde")

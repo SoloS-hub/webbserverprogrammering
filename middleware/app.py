@@ -45,6 +45,7 @@ def get_user_from_db(username):
     user = cursor.fetchone()
     cursor.close()
     conn.close()
+    print(f"Fetched user from DB: {user}")
     return user
 
 

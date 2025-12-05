@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content%}
+<h1>Hello</h1>
+
+<form>
+	<label for="message">Message:</label>
+	<input type="text" id="message" name="text" placeholder="type your mesage" /><br />
+    <button onclick="sendMessage()">Send</button>
+</form>
+
+<script>
+    const socket = io()
+
+    socket.on("connect", () => {
+        console.log("Connected to server")
+    })
+
+    socket.on("user_connected", () => {
+        console.log("annother user conected")
+    })
+
+    socket.on("message", function(data) {
+        var message = document.getElementById("messages")
+        console.log(`${message}`)
+    })
+
+    function sendMessage() {
+        var messageInput = document.getElementById("message")
+        var message = messageInput.value
+        socket.send(message)
+        var messageInput = ""
+
+    }
+</script>
+{% endblock %}

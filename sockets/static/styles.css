@@ -1,0 +1,19 @@
+div.messages {
+    border: 1px solid #ccc;
+    height: 300px;
+    overflow-y: scroll;
+    scrollbar-gutter: inherit;
+    width: 500px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border-color: #888;
+}
+.messages p {
+    padding: 5px;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+    width: fit-content;
+    max-width: 80%;
+    word-wrap: break-word;
+}

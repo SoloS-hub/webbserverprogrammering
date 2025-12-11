@@ -1,36 +1,38 @@
-{% extends "base.html" %}
-
-{% block content%}
+{% extends "base.html" %} {% block content%}
 <h1>Hello</h1>
+
+<div>
+	<h3>Chatlog</h3>
+	<div id="chatlog" class="messages"></div>
+</div>
 
 <form>
 	<label for="message">Message:</label>
 	<input type="text" id="message" name="text" placeholder="type your mesage" /><br />
-    <button onclick="sendMessage()">Send</button>
+	<input type="submit" value="send" />
 </form>
 
 <script>
-    const socket = io()
+	const socket = io()
+	var username = prompt("Enter your name:")
+	socket.emit("join", username)
 
-    socket.on("connect", () => {
-        console.log("Connected to server")
-    })
+	socket.on("user_connected", () => {
+		console.log("annother user conected")
+	})
 
-    socket.on("user_connected", () => {
-        console.log("annother user conected")
-    })
+	socket.on("message", function (data) {
+		console.log(`message: ${data}`)
+		var chatlog = document.getElementById("chatlog")
+		chatlog.innerHTML += `<p>${data}</p>`
+	})
 
-    socket.on("message", function(data) {
-        var message = document.getElementById("messages")
-        console.log(`${message}`)
-    })
-
-    function sendMessage() {
-        var messageInput = document.getElementById("message")
-        var message = messageInput.value
-        socket.send(message)
-        var messageInput = ""
-
-    }
+	addEventListener("submit", function (event) {
+		event.preventDefault()
+		var messageInput = document.getElementById("message")
+		var message = messageInput.value
+		socket.emit("message", message)
+		messageInput.value = ""
+	})
 </script>
 {% endblock %}

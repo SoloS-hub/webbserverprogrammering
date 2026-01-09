@@ -32,7 +32,6 @@ def index():
 @socketio.on('join')
 def handle_join(username):
     users[request.sid] = username
-    join_room(username)
     emit("message", f"{username} joined the chat", broadcast=True)
 
 @socketio.on("message")

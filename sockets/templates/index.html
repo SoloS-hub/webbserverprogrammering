@@ -24,7 +24,9 @@
 	socket.on("message", function (data) {
 		console.log(`message: ${data}`)
 		var chatlog = document.getElementById("chatlog")
-		chatlog.innerHTML += `<p>${data}</p>`
+		p = document.createElement("p")
+		p.innerText = data
+		chatlog.appendChild(p)
 	})
 
 	addEventListener("submit", function (event) {

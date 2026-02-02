@@ -1,0 +1,6 @@
+{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content %}
+<h1>Hello</h1>
+{% if user_authenticated %}
+<p>Welcome back, {{ session['username'] }}!</p>
+{% endif %} {% with message = get_flashed_messages() %} {% if message %} {{ message[0] }} <br />
+{% endif %} {% endwith %} {% endblock %}

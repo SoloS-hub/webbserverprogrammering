@@ -151,7 +151,10 @@ def users_by_id(id):
     conn.close()
     return render_template("users.html", users=user)
 
-@app.route('/api/users')
+def is_valid_user_data(data):
+    return data and "username" in data and "password" in data and "name" in data
+
+@app.route('/api/users', methods=['GET'])
 def users_api():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -162,7 +165,32 @@ def users_api():
     conn.close()
     return jsonify(users_list)
 
-@app.route('/api/users/<int:id>')
+@app.route('/api/users', methods=['POST'])
+def create_user_api():
+    data = request.get_json(silent=True)
+    if is_valid_user_data(data):
+        username = data.get("username")
+        name = data.get("name")
+        password = data.get("password")
+        hashed_password = generate_password_hash(password)
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            query = "INSERT INTO users (`username`, `password`, `name`) VALUES (%s, %s, %s)"
+            cursor.execute(query, (username, hashed_password, name))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return jsonify({"id": cursor.lastrowid, "status": "User created"}), 201
+
+        except Exception as err:
+            print(f"Error: {err}")
+            return jsonify({"error": "Something went wrong. Sorry!"}), 500
+    else:
+        return jsonify({"error": "Missing critical data field"}), 422
+
+@app.route('/api/users/<int:id>', methods=['GET'])
 def users_by_id_api(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)

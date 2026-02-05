@@ -183,7 +183,7 @@ def create_user_api():
             cursor.close()
             conn.close()
             return jsonify({"id": cursor.lastrowid, "status": "User created"}), 201
-
+        
         except Exception as err:
             print(f"Error: {err}")
             return jsonify({"error": "Something went wrong. Sorry!"}), 500

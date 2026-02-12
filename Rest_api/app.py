@@ -151,9 +151,6 @@ def users_by_id(id):
     conn.close()
     return render_template("users.html", users=user)
 
-def is_valid_user_data(data):
-    return data and "username" in data and "password" in data and "name" in data
-
 @app.route('/api/users', methods=['GET'])
 def users_api():
     conn = get_db_connection()
@@ -168,7 +165,7 @@ def users_api():
 @app.route('/api/users', methods=['POST'])
 def create_user_api():
     data = request.get_json(silent=True)
-    if is_valid_user_data(data):
+    if data and "username" in data and "password" in data and "name" in data:
         username = data.get("username")
         name = data.get("name")
         password = data.get("password")
@@ -182,7 +179,8 @@ def create_user_api():
             conn.commit()
             cursor.close()
             conn.close()
-            return jsonify({"id": cursor.lastrowid, "status": "User created"}), 201
+            user = get_user_from_db(username)
+            return jsonify({"id": cursor.lastrowid, "status": "User created", "user": user}), 201
         
         except Exception as err:
             print(f"Error: {err}")
@@ -200,6 +198,37 @@ def users_by_id_api(id):
     cursor.close()
     conn.close()
     return jsonify(user)
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    data = request.get_json(silent=True)
+    print(f"Received data for update: {data}")
+
+    name = data.get('name')
+    username = data.get('username')
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Användaren hittades inte"}), 404
+        
+        sql = """UPDATE users SET name = %s, username = %s WHERE id = %s"""
+
+        cursor.execute(sql, (name, username, user_id))
+    
+        conn.commit()
+    
+        cursor.close()
+        conn.close()
+
+        return jsonify({"message": "Användare uppdaterad", "id": user_id}), 200
+
+    except Exception as err:
+        print(f"Error: {err}")
+        return jsonify({"error": err}), 400
+
 
 if __name__ == '__main__':
     app.run(debug=True)

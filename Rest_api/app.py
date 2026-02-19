@@ -17,22 +17,22 @@ DB_CONFIG = {
 
 def login_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def check_if_loggedin(*args, **kwargs):
         if 'username' not in session:
-            return redirect(url_for('login'))
+            return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
-    return decorated_function
+    return check_if_loggedin
 
-@app.before_request
-def start_timer():
-    g.start_time = time.time()
-    app.logger.info(f"Request started: {request.method} {request.path}")
+# @app.before_request
+# def start_timer():
+#     g.start_time = time.time()
+#     app.logger.info(f"Request started: {request.method} {request.path}")
 
-@app.after_request
-def log_request(response):
-    duration = time.time() - g.start_time
-    app.logger.info(f"Request ended: {request.method} {request.path} | Duration: {duration:.4f}s | Status: {response.status_code}")
-    return response
+# @app.after_request
+# def log_request(response):
+#     duration = time.time() - g.start_time
+#     app.logger.info(f"Request ended: {request.method} {request.path} | Duration: {duration:.4f}s | Status: {response.status_code}")
+#     return response
 
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
@@ -62,8 +62,9 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if session.get('username'):
-        return redirect(url_for('profile'))
+    next_page = request.args.get('next')
+    print(f"Next page: {next_page}")
+
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
@@ -73,7 +74,7 @@ def login():
         if user and check_password_hash(user['password'], password):
             session['username'] = username
             flash('Login successful')
-            return render_template("profile.html", username=session['username'], user_data=user)
+            return redirect(next_page if next_page else url_for('profile'))
         flash('Invalid username or password')
         return redirect(url_for('login'))
     return render_template("login.html")
@@ -130,12 +131,16 @@ def profile():
     return render_template("profile.html", username=session['username'], user_data=user)
 
 @app.route('/users')
+@login_required
 def users():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     query = "SELECT id, username, name, email FROM users"
+
     cursor.execute(query)
     users_list = cursor.fetchall()
+
     cursor.close()
     conn.close()
     return render_template("users.html", users=users_list)
@@ -211,9 +216,12 @@ def update_user(user_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        if cursor.rowcount == 0:
+        sql = """SELECT * FROM users WHERE id = %s"""
+        cursor.execute(sql, (user_id,))
+        user = cursor.fetchone()
+        if not user:
             return jsonify({"error": "Användaren hittades inte"}), 404
-        
+
         sql = """UPDATE users SET name = %s, username = %s WHERE id = %s"""
 
         cursor.execute(sql, (name, username, user_id))

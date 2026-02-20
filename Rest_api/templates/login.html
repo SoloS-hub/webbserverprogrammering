@@ -4,7 +4,7 @@
 	<input type="text" id="username" name="username" /><br />
 	<label for="password">password:</label>
 	<input type="password" id="password" name="password" /><br />
-	<input type="submit" value="login" />
+	<input type="submit" />
 	{% with message = get_flashed_messages() %} {% if message %} {{ message[0] }} <br />
 	{% endif %} {% endwith %}
 </form>

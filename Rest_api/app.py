@@ -40,9 +40,11 @@ def get_db_connection():
 def get_user_from_db(username):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     query = "SELECT * FROM users WHERE username = %s"
     cursor.execute(query, (username,))
     user = cursor.fetchone()
+    
     cursor.close()
     conn.close()
     print(f"Fetched user from DB: {user}")
@@ -156,18 +158,44 @@ def users_by_id(id):
     conn.close()
     return render_template("users.html", users=user)
 
+def api_login_required(f):
+    @wraps(f)
+    def check_if_logedin(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('api_login'))
+        return f(*args, **kwargs)
+    return check_if_logedin
+
+@app.route('/api/login', methods=['GET', 'POST'])
+def api_login():
+    if request.method == 'POST':
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+
+        user = get_user_from_db(username)
+
+        if user and check_password_hash(user['password'], password):
+            return jsonify(user)
+        flash('Invalid username or password')
+        return redirect(url_for('api_login'))
+    return render_template("login.html")
+
 @app.route('/api/users', methods=['GET'])
+@api_login_required
 def users_api():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     query = "SELECT id, username, name, email FROM users"
     cursor.execute(query)
     users_list = cursor.fetchall()
+
     cursor.close()
     conn.close()
     return jsonify(users_list)
 
 @app.route('/api/users', methods=['POST'])
+@api_login_required
 def create_user_api():
     data = request.get_json(silent=True)
     if data and "username" in data and "password" in data and "name" in data:
@@ -194,17 +222,26 @@ def create_user_api():
         return jsonify({"error": "Missing critical data field"}), 422
 
 @app.route('/api/users/<int:id>', methods=['GET'])
+@api_login_required
 def users_by_id_api(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     query = "SELECT id, username, name, email FROM users WHERE id = %s"
+
     cursor.execute(query, (id,))
+
     user = cursor.fetchall()
+
     cursor.close()
     conn.close()
+    if not user:
+        print(f"User with ID {id} not found")
+        return jsonify({"error": "Användaren hittades inte"}), 404
     return jsonify(user)
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
+@api_login_required
 def update_user(user_id):
     data = request.get_json(silent=True)
     print(f"Received data for update: {data}")
@@ -219,8 +256,6 @@ def update_user(user_id):
         sql = """SELECT * FROM users WHERE id = %s"""
         cursor.execute(sql, (user_id,))
         user = cursor.fetchone()
-        if not user:
-            return jsonify({"error": "Användaren hittades inte"}), 404
 
         sql = """UPDATE users SET name = %s, username = %s WHERE id = %s"""
 
@@ -230,6 +265,9 @@ def update_user(user_id):
     
         cursor.close()
         conn.close()
+
+        if not user:
+            return jsonify({"error": "Användaren hittades inte"}), 404
 
         return jsonify({"message": "Användare uppdaterad", "id": user_id}), 200
 

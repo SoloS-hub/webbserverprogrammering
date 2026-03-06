@@ -3,10 +3,12 @@ from functools import wraps
 import time
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
 
 app = Flask(__name__)
-
-app.secret_key = 'your_secret_key'
+app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
+jwt = JWTManager(app)
 
 DB_CONFIG = {
     'host': 'localhost',
@@ -14,14 +16,6 @@ DB_CONFIG = {
     'password': '',
     'database': 'inlamning_1'
 }
-
-def login_required(f):
-    @wraps(f)
-    def check_if_loggedin(*args, **kwargs):
-        if 'username' not in session:
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-    return check_if_loggedin
 
 # @app.before_request
 # def start_timer():
@@ -62,10 +56,17 @@ def home():
         return render_template("index.html", user_authenticated=True)
     return render_template("index.html")
 
+def login_required(f):
+    @wraps(f)
+    def check_if_loggedin(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return check_if_loggedin
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     next_page = request.args.get('next')
-    print(f"Next page: {next_page}")
 
     if request.method == 'POST':
         username = request.form.get('username', '')
@@ -158,30 +159,22 @@ def users_by_id(id):
     conn.close()
     return render_template("users.html", users=user)
 
-def api_login_required(f):
-    @wraps(f)
-    def check_if_logedin(*args, **kwargs):
-        if 'username' not in session:
-            return redirect(url_for('api_login'))
-        return f(*args, **kwargs)
-    return check_if_logedin
-
-@app.route('/api/login', methods=['GET', 'POST'])
+@app.route('/api/login', methods=['POST'])
 def api_login():
-    if request.method == 'POST':
-        username = request.form.get('username', '')
-        password = request.form.get('password', '')
+    login_info = request.get_json(silent=True)
 
-        user = get_user_from_db(username)
+    username = login_info.get('username')
+    password = login_info.get('password')
 
-        if user and check_password_hash(user['password'], password):
-            return jsonify(user)
-        flash('Invalid username or password')
-        return redirect(url_for('api_login'))
-    return render_template("login.html")
+    user = get_user_from_db(username)
+
+    if user and check_password_hash(user['password'], password):
+        access_token = create_access_token(identity=username)
+        return jsonify(access_token=access_token), 200
+    return jsonify({"error": "Invalid username or password"}), 401
 
 @app.route('/api/users', methods=['GET'])
-@api_login_required
+@jwt_required()
 def users_api():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -195,7 +188,7 @@ def users_api():
     return jsonify(users_list)
 
 @app.route('/api/users', methods=['POST'])
-@api_login_required
+@jwt_required()
 def create_user_api():
     data = request.get_json(silent=True)
     if data and "username" in data and "password" in data and "name" in data:
@@ -222,7 +215,7 @@ def create_user_api():
         return jsonify({"error": "Missing critical data field"}), 422
 
 @app.route('/api/users/<int:id>', methods=['GET'])
-@api_login_required
+@jwt_required()
 def users_by_id_api(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -241,7 +234,7 @@ def users_by_id_api(id):
     return jsonify(user)
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
-@api_login_required
+@jwt_required()
 def update_user(user_id):
     data = request.get_json(silent=True)
     print(f"Received data for update: {data}")

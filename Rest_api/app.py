@@ -1,15 +1,19 @@
+# Import all Flask utilities (request, session, render_template, etc.)
 from flask import *
-from functools import wraps
-import time
-import mysql.connector
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from functools import wraps  # For decorator wrapper functionality
+import time  # For timing requests
+import mysql.connector  # MySQL database connection
+from werkzeug.security import generate_password_hash, check_password_hash  # Password hashing
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity  # JWT authentication
 
 
+# Initialize Flask application
 app = Flask(__name__)
+# Set JWT secret key for token validation
 app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
-jwt = JWTManager(app)
+jwt = JWTManager(app)  # Enable JWT support
 
+# MySQL database configuration
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
@@ -28,16 +32,18 @@ DB_CONFIG = {
 #     app.logger.info(f"Request ended: {request.method} {request.path} | Duration: {duration:.4f}s | Status: {response.status_code}")
 #     return response
 
+# Helper function to establish database connection
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
 
+# Retrieve a user from the database by username
 def get_user_from_db(username):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(dictionary=True)  # Return results as dictionaries
 
     query = "SELECT * FROM users WHERE username = %s"
-    cursor.execute(query, (username,))
-    user = cursor.fetchone()
+    cursor.execute(query, (username,))  # Use parameterized query to prevent SQL injection
+    user = cursor.fetchone()  # Get first result
     
     cursor.close()
     conn.close()
@@ -47,76 +53,88 @@ def get_user_from_db(username):
 
 @app.route('/hash')
 def hash_user_password_manual():
+    # Route to hash a password (for testing/manual purposes)
     pwhash = generate_password_hash(request.args.get('p'))
     return pwhash
 
+# Home page route - checks if user is already logged in
 @app.route('/')
 def home():
     if 'username' in session:
         return render_template("index.html", user_authenticated=True)
     return render_template("index.html")
 
+# Custom decorator to require login for protected routes
 def login_required(f):
     @wraps(f)
     def check_if_loggedin(*args, **kwargs):
         if 'username' not in session:
+            # Redirect to login with return URL if not authenticated
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return check_if_loggedin
 
+# Login route - handles both GET (show form) and POST (process login)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    next_page = request.args.get('next')
+    next_page = request.args.get('next')  # Get redirect URL if provided
 
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
 
-        user = get_user_from_db(username)
+        user = get_user_from_db(username)  # Look up user in database
 
+        # Verify user exists and password matches
         if user and check_password_hash(user['password'], password):
-            session['username'] = username
+            session['username'] = username  # Store username in session
             flash('Login successful')
             return redirect(next_page if next_page else url_for('profile'))
         flash('Invalid username or password')
         return redirect(url_for('login'))
     return render_template("login.html")
 
+# Logout route - clear session and redirect to home
 @app.route('/logout')
 def logout():
-    session.clear()
+    session.clear()  # Remove all session data
     flash("Logged out successfully")
     return redirect(url_for('home'))
 
+# Create account route - handles user registration
 @app.route('/create_account', methods=['GET', 'POST'])
 def create_account():
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password)  # Hash password for security
 
-        user = get_user_from_db(username)
+        user = get_user_from_db(username)  # Check if username already exists
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
+        # Prevent duplicate usernames
         if user:
             flash('Username already exists')
             return redirect(url_for('create_account'))
         
+        # Insert new user into database
         query = "INSERT INTO users (username, password) VALUES (%s, %s)"
         cursor.execute(query, (username, hashed_password))
-        conn.commit()
+        conn.commit()  # Save changes
         cursor.close()
         conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('login'))  # Redirect to login page
     return render_template("create_account.html")
 
 
+# User profile route - requires authentication
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     if request.method == 'POST':
+        # Update user profile information
         name = request.form.get('name', '')
         email = request.form.get('email', '')
         about_me = request.form.get('about_me', '')
@@ -129,16 +147,19 @@ def profile():
         cursor.close()
         conn.close()
     
+    # Fetch current user data from database
     user = get_user_from_db(session['username'])
 
     return render_template("profile.html", username=session['username'], user_data=user)
 
+# Display all users - requires authentication
 @app.route('/users')
 @login_required
 def users():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
+    # Fetch all users (excluding passwords for security)
     query = "SELECT id, username, name, email FROM users"
 
     cursor.execute(query)
@@ -148,10 +169,12 @@ def users():
     conn.close()
     return render_template("users.html", users=users_list)
 
+# Get a specific user by ID
 @app.route('/users/<int:id>')
 def users_by_id(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    # Fetch user by ID (excluding password for security)
     query = "SELECT id, username, name, email FROM users WHERE id = %s"
     cursor.execute(query, (id,))
     user = cursor.fetchall()
@@ -159,26 +182,30 @@ def users_by_id(id):
     conn.close()
     return render_template("users.html", users=user)
 
+# API login endpoint - returns JWT token for authenticated users
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    login_info = request.get_json(silent=True)
+    login_info = request.get_json(silent=True)  # Parse JSON request body
 
     username = login_info.get('username')
     password = login_info.get('password')
 
     user = get_user_from_db(username)
 
+    # Verify credentials and generate JWT token
     if user and check_password_hash(user['password'], password):
         access_token = create_access_token(identity=username)
         return jsonify(access_token=access_token), 200
     return jsonify({"error": "Invalid username or password"}), 401
 
+# API endpoint to get all users - requires valid JWT token
 @app.route('/api/users', methods=['GET'])
 @jwt_required()
 def users_api():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
+    # Fetch all users (excluding passwords)
     query = "SELECT id, username, name, email FROM users"
     cursor.execute(query)
     users_list = cursor.fetchall()
@@ -187,19 +214,22 @@ def users_api():
     conn.close()
     return jsonify(users_list)
 
+# API endpoint to create a new user - requires valid JWT token
 @app.route('/api/users', methods=['POST'])
 @jwt_required()
 def create_user_api():
     data = request.get_json(silent=True)
+    # Validate required fields are present
     if data and "username" in data and "password" in data and "name" in data:
         username = data.get("username")
         name = data.get("name")
         password = data.get("password")
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password)  # Hash password
 
         try:
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
+            # Insert new user into database
             query = "INSERT INTO users (`username`, `password`, `name`) VALUES (%s, %s, %s)"
             cursor.execute(query, (username, hashed_password, name))
             conn.commit()
@@ -212,14 +242,17 @@ def create_user_api():
             print(f"Error: {err}")
             return jsonify({"error": "Something went wrong. Sorry!"}), 500
     else:
+        # Return 422 (Unprocessable Entity) if required fields missing
         return jsonify({"error": "Missing critical data field"}), 422
 
+# API endpoint to get a specific user by ID - requires valid JWT token
 @app.route('/api/users/<int:id>', methods=['GET'])
 @jwt_required()
 def users_by_id_api(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
+    # Fetch user by ID (excluding password)
     query = "SELECT id, username, name, email FROM users WHERE id = %s"
 
     cursor.execute(query, (id,))
@@ -228,11 +261,13 @@ def users_by_id_api(id):
 
     cursor.close()
     conn.close()
+    # Return 404 if user not found
     if not user:
         print(f"User with ID {id} not found")
         return jsonify({"error": "Användaren hittades inte"}), 404
     return jsonify(user)
 
+# API endpoint to update user information - requires valid JWT token
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 @jwt_required()
 def update_user(user_id):
@@ -246,19 +281,22 @@ def update_user(user_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
+        # Check if user exists
         sql = """SELECT * FROM users WHERE id = %s"""
         cursor.execute(sql, (user_id,))
         user = cursor.fetchone()
 
+        # Update user's name and username
         sql = """UPDATE users SET name = %s, username = %s WHERE id = %s"""
 
         cursor.execute(sql, (name, username, user_id))
     
-        conn.commit()
+        conn.commit()  # Save changes
     
         cursor.close()
         conn.close()
 
+        # Return 404 if user doesn't exist
         if not user:
             return jsonify({"error": "Användaren hittades inte"}), 404
 
@@ -268,6 +306,17 @@ def update_user(user_id):
         print(f"Error: {err}")
         return jsonify({"error": err}), 400
 
+# API endpoint to get current authenticated user's info - requires valid JWT token
+@app.route('/api/me', methods=['GET'])
+@jwt_required()
+def get_user_from_token():
+    # Extract username from JWT token
+    current_user = get_jwt_identity()
+    print(f"curren user is {current_user}")
+    user_info = get_user_from_db(current_user)
+    user_info.pop('password', None)  # Remove password from response for security
+    return jsonify(user_info)
 
+# Run the Flask application in debug mode
 if __name__ == '__main__':
     app.run(debug=True)

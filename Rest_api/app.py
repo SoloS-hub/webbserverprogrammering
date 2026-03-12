@@ -38,17 +38,26 @@ def get_db_connection():
 
 # Retrieve a user from the database by username
 def get_user_from_db(username):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # Return results as dictionaries
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)  # Return results as dictionaries
 
-    query = "SELECT * FROM users WHERE username = %s"
-    cursor.execute(query, (username,))  # Use parameterized query to prevent SQL injection
-    user = cursor.fetchone()  # Get first result
-    
-    cursor.close()
-    conn.close()
-    print(f"Fetched user from DB: {user}")
-    return user
+        query = "SELECT * FROM users WHERE username = %s"
+        cursor.execute(query, (username,))  # Use parameterized query to prevent SQL injection
+        user = cursor.fetchone()  # Get first result
+        
+        print(f"Fetched user from DB: {user}")
+        return user
+        
+    except Exception as err:
+        print(f"Error fetching user from DB: {err}")
+        return None
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn:
+            conn.close()
+
 
 
 @app.route('/hash')
@@ -170,21 +179,28 @@ def update_user(user_id):
         sql = """UPDATE users SET name = %s, username = %s WHERE id = %s"""
 
         cursor.execute(sql, (name, username, user_id))
-    
+
+        sql = """SELECT id, username, name, email FROM users WHERE id = %s"""
+        cursor.execute(sql, (user_id,))
+        user = cursor.fetchone()
+
         conn.commit()  # Save changes
-    
-        cursor.close()
-        conn.close()
+
 
         # Return 404 if user doesn't exist
         if not user:
             return jsonify({"error": "Användaren hittades inte"}), 404
 
-        return jsonify({"message": "Användare uppdaterad", "id": user_id}), 200
+        return jsonify({"message": "Användare uppdaterad", "user": user}), 200
 
     except Exception as err:
         print(f"Error: {err}")
         return jsonify({"error": err}), 400
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn:
+            conn.close()
 
 # API endpoint to get current authenticated user's info - requires valid JWT token
 @app.route('/api/me', methods=['GET'])
@@ -195,7 +211,7 @@ def get_user_from_token():
     print(f"curren user is {current_user}")
     user_info = get_user_from_db(current_user)
     user_info.pop('password', None)  # Remove password from response for security
-    return jsonify(user_info)
+    return jsonify(user_info), 200
 
 # Run the Flask application in debug mode
 if __name__ == '__main__':

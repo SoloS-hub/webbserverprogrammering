@@ -1,6 +1,24 @@
-{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content %}
-<h1>Hello</h1>
-{% if user_authenticated %}
-<p>Welcome back, {{ session['username'] }}!</p>
-{% endif %} {% with message = get_flashed_messages() %} {% if message %} {{ message[0] }} <br />
-{% endif %} {% endwith %} {% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+		<title>documentation</title>
+	</head>
+	<body>
+        <h1>Documentation of this API</h1>
+        <h2>API Routes</h2>
+		<nav>
+			<ul>
+				<li><p>POST /api/login - Authenticate user and return JWT token. accepts JSON object with "username" and "password"</p></li>
+				<li><p>*GET /api/users - Retrieve all users</p></li>
+				<li><p>*POST /api/users - Create a new user</p></li>
+                <li><p>*GET /api/users/&lt;id&gt; - Retrieve a specific user by ID</p></li>
+                <li><p>*PUT /api/users/&lt;id&gt; - Update a specific user by ID</p></li>
+                <li><p>*DELETE /api/users/&lt;id&gt; - Delete a specific user by ID</p></li>
+			</ul>
+		</nav>
+        <p>* = Requires valid JWT token</p>
+	</body>
+</html>

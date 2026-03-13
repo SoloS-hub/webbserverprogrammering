@@ -1,7 +1,6 @@
 # Import all Flask utilities (request, session, render_template, etc.)
 from flask import *
 from functools import wraps  # For decorator wrapper functionality
-import time  # For timing requests
 import mysql.connector  # MySQL database connection
 from werkzeug.security import generate_password_hash, check_password_hash  # Password hashing
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity  # JWT authentication
@@ -21,20 +20,13 @@ DB_CONFIG = {
     'database': 'inlamning_1'
 }
 
-# @app.before_request
-# def start_timer():
-#     g.start_time = time.time()
-#     app.logger.info(f"Request started: {request.method} {request.path}")
-
-# @app.after_request
-# def log_request(response):
-#     duration = time.time() - g.start_time
-#     app.logger.info(f"Request ended: {request.method} {request.path} | Duration: {duration:.4f}s | Status: {response.status_code}")
-#     return response
-
 # Helper function to establish database connection
 def get_db_connection():
-    return mysql.connector.connect(**DB_CONFIG)
+    try:
+        return mysql.connector.connect(**DB_CONFIG)
+    except mysql.connector.Error as err:
+        print(f"Error connecting to database: {err}")
+        return None
 
 # Retrieve a user from the database by username
 def get_user_from_db(username):
@@ -91,17 +83,24 @@ def api_login():
 @app.route('/api/users', methods=['GET'])
 @jwt_required()
 def users_api():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-    # Fetch all users (excluding passwords)
-    query = "SELECT id, username, name, email FROM users"
-    cursor.execute(query)
-    users_list = cursor.fetchall()
+        # Fetch all users (excluding passwords)
+        query = "SELECT id, username, name, email FROM users"
+        cursor.execute(query)
+        users_list = cursor.fetchall()
 
-    cursor.close()
-    conn.close()
-    return jsonify(users_list)
+        return jsonify(users_list)
+    except Exception as err:
+        print(f"Error fetching users: {err}")
+        return jsonify({"error": "Could not fetch users"}), 500
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn:
+            conn.close()
 
 # API endpoint to create a new user - requires valid JWT token
 @app.route('/api/users', methods=['POST'])
@@ -121,15 +120,18 @@ def create_user_api():
             # Insert new user into database
             query = "INSERT INTO users (`username`, `password`, `name`) VALUES (%s, %s, %s)"
             cursor.execute(query, (username, hashed_password, name))
-            conn.commit()
-            cursor.close()
-            conn.close()
+            conn.commit()  # Save changes to database
             user = get_user_from_db(username)
             return jsonify({"id": cursor.lastrowid, "status": "User created", "user": user}), 201
         
         except Exception as err:
             print(f"Error: {err}")
             return jsonify({"error": "Something went wrong. Sorry!"}), 500
+        finally:
+            if 'cursor' in locals() and cursor:
+                cursor.close()
+            if 'conn' in locals() and conn:
+                conn.close()
     else:
         # Return 422 (Unprocessable Entity) if required fields missing
         return jsonify({"error": "Missing critical data field"}), 422
@@ -138,23 +140,28 @@ def create_user_api():
 @app.route('/api/users/<int:id>', methods=['GET'])
 @jwt_required()
 def users_by_id_api(id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-    # Fetch user by ID (excluding password)
-    query = "SELECT id, username, name, email FROM users WHERE id = %s"
+        # Fetch user by ID (excluding password)
+        query = "SELECT id, username, name, email FROM users WHERE id = %s"
+        cursor.execute(query, (id,))
+        user = cursor.fetchall()
 
-    cursor.execute(query, (id,))
-
-    user = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-    # Return 404 if user not found
-    if not user:
-        print(f"User with ID {id} not found")
-        return jsonify({"error": "Användaren hittades inte"}), 404
-    return jsonify(user)
+        # Return 404 if user not found
+        if not user:
+            print(f"User with ID {id} not found")
+            return jsonify({"error": "Användaren hittades inte"}), 404
+        return jsonify(user)
+    except Exception as err:
+        print(f"Error fetching user by ID: {err}")
+        return jsonify({"error": "Could not fetch user"}), 500
+    finally:
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn:
+            conn.close()
 
 # API endpoint to update user information - requires valid JWT token
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
